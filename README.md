@@ -44,8 +44,8 @@ All Docker builds produce consistent, working images across different platforms 
 
 ### Clone the repository:
 ```bash
-git clone <your-gitlab-repo-url>
-cd image_builder
+git clone https://github.com/yokozu777/infrastructure-automation-toolkit.git
+cd infrastructure-automation-toolkit
 ```
 ### Important: Configure ARG Variables First
 Before building, **edit the `krang.dockerfile` file** to set the default ARG values according to your specific requirements:
