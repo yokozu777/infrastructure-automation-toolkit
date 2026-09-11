@@ -1,9 +1,9 @@
 # =============================================================================
 # BASE IMAGES
 # =============================================================================
-ARG GOLANG_BASE_IMAGE_VERSION=1.25-alpine  # Go version for building Terraform providers
-ARG PYTHON_BASE_IMAGE_VERSION=3.13-alpine  # Python base image for Ansible and tools
-ARG PYTHON_VERSION=3.13  # Python version for path consistency across platforms
+ARG GOLANG_BASE_IMAGE_VERSION=1.27rc2-alpine # Go version for building Terraform providers
+ARG PYTHON_BASE_IMAGE_VERSION=3.14-alpine  # Python base image for Ansible and tools
+ARG PYTHON_VERSION=3.14  # Python version for path consistency across platforms
 
 # =============================================================================
 # COMPONENT ENABLE/DISABLE FLAGS
@@ -28,24 +28,24 @@ ARG ADD_KEYCLOAK_PROVIDER=true  # Enable Keycloak Terraform provider
 # VERSION CONFIGURATION
 # =============================================================================
 # Terraform
-ARG TERRAFORM_VERSION=v1.13.2  # Terraform version to install
+ARG TERRAFORM_VERSION=v1.15.8  # Terraform version to install
 
 # Ansible
-ARG ANSIBLE_FULL_VERSION=12.0.0  # Full Ansible package version
+ARG ANSIBLE_FULL_VERSION=14.3.0  # Full Ansible package version
 ARG ANSIBLE_CORE_VERSION=2.19.2  # Ansible core package version
-ARG MITOGEN_VERSION=0.3.27  # Mitogen version for Ansible acceleration
+ARG MITOGEN_VERSION=0.3.51  # Mitogen version for Ansible acceleration
 
 # Kubernetes Tools
-ARG KUBECTL_VERSION=v1.34.1  # Kubernetes CLI version
-ARG HELM_VERSION=v3.19.0  # Helm package manager version
+ARG KUBECTL_VERSION=v1.36.3  # Kubernetes CLI version
+ARG HELM_VERSION=v4.2.3  # Helm package manager version
 ARG YQ_VERSION=v4.47.2  # YAML processor version
 
 # Terraform Providers
-ARG PROXMOX_PROVIDER_VERSION=v3.0.2-rc04  # Proxmox provider version
+ARG PROXMOX_PROVIDER_VERSION=v3.0.2-rc08  # Proxmox provider version
 ARG PROXMOX_API_VERSION=master  # Proxmox API version for provider
-ARG DNS_PROVIDER_VERSION=v3.4.3  # DNS provider version
-ARG LOCAL_PROVIDER_VERSION=v2.5.2  # Local provider version
-ARG KEYCLOACK_PROVIDER_VERSION=v5.2.0  # Keycloak provider version
+ARG DNS_PROVIDER_VERSION=v3.5.0  # DNS provider version
+ARG LOCAL_PROVIDER_VERSION=v2.8.0  # Local provider version
+ARG KEYCLOACK_PROVIDER_VERSION=v5.8.0  # Keycloak provider version
 
 # =============================================================================
 # OPTIONAL FEATURES
@@ -56,11 +56,11 @@ ARG CUSTOM_UTILS_PACKAGES="jq"  # Space-separated list of custom packages to ins
 
 # Python Packages
 ARG INSTALL_CUSTOM_PIP_UTILS=true  # Enable installation of custom Python packages
-ARG CUSTOM_PIP_PACKAGES=""  # Space-separated list of custom pip packages
+ARG CUSTOM_PIP_PACKAGES="passlib"  # Space-separated list of custom pip packages
 
 # SSL Certificates
 ARG INSTALL_CUSTOM_CA_SSL_CERT=true  # Enable custom CA certificate installation
-ARG CA_CERT_URL=https://ca.example.com:8443/roots.pem  # URL to custom CA certificate
+ARG CA_CERT_URL=https://ca.mxhash.com:8443/roots.pem  # URL to custom CA certificate
 
 # =============================================================================
 # BUILD STAGES
@@ -223,7 +223,7 @@ ARG CA_CERT_URL
 COPY --from=binaries /tmp/opt/usr/local/bin/ /usr/local/bin/
 
 # Install dependencies and Python packages
-RUN apk add --no-cache bash curl sshpass openssh-client git ; \
+RUN apk add --no-cache bash curl sshpass openssh-client git openssl rsync nss_wrapper sudo py3-virtualenv py3-pip py3-jmespath unzip wget tar; \
     if [ "${ADD_ANSIBLE_MITOGEN}" = "true" ]; then \
         pip install --no-cache-dir mitogen=="${MITOGEN_VERSION}"; \
     fi ; \
@@ -233,11 +233,11 @@ RUN apk add --no-cache bash curl sshpass openssh-client git ; \
     fi ; \
     # Install Ansible based on package type
     if [ "${ANSIBLE_PACKAGE_TYPE}" = "core" ]; then \
-        pip install --no-cache-dir pyOpenSSL ansible-core=="${ANSIBLE_CORE_VERSION}" pyyaml jmespath; \
+        pip install --no-cache-dir pyOpenSSL ansible-core=="${ANSIBLE_CORE_VERSION}" pyyaml jmespath kubernetes; \
     elif [ "${ANSIBLE_PACKAGE_TYPE}" = "full" ]; then \
-        pip install --no-cache-dir pyOpenSSL ansible=="${ANSIBLE_FULL_VERSION}" pyyaml jmespath; \
+        pip install --no-cache-dir pyOpenSSL ansible=="${ANSIBLE_FULL_VERSION}" pyyaml jmespath kubernetes; \
     elif [ "${ANSIBLE_PACKAGE_TYPE}" = "none" ]; then \
-        pip install --no-cache-dir pyOpenSSL pyyaml jmespath; \
+        pip install --no-cache-dir pyOpenSSL pyyaml jmespath kubernetes; \
     fi ; \
     # Install custom Python packages if enabled
     if [ "${INSTALL_CUSTOM_PIP_UTILS}" = "true" ]; then \
@@ -249,31 +249,40 @@ RUN apk add --no-cache bash curl sshpass openssh-client git ; \
     fi ; \
     # Create Terraform plugin directories and links only if Terraform is enabled
     if [ "${ADD_TERRAFORM}" = "true" ]; then \
+        TF_PLUGIN_MIRROR="/usr/local/share/terraform/plugins"; \
         # Create plugin directories
         if [ "${ADD_PROXMOX_PROVIDER}" = "true" ]; then \
             mkdir -p /root/.terraform.d/plugins/registry.terraform.io/telmate/proxmox/$(echo "${PROXMOX_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/; \
+            mkdir -p "${TF_PLUGIN_MIRROR}/registry.terraform.io/telmate/proxmox/$(echo "${PROXMOX_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/"; \
         fi ; \
         if [ "${ADD_DNS_PROVIDER}" = "true" ]; then \
             mkdir -p /root/.terraform.d/plugins/registry.terraform.io/hashicorp/dns/$(echo "${DNS_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/; \
+            mkdir -p "${TF_PLUGIN_MIRROR}/registry.terraform.io/hashicorp/dns/$(echo "${DNS_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/"; \
         fi ; \
         if [ "${ADD_LOCAL_PROVIDER}" = "true" ]; then \
             mkdir -p /root/.terraform.d/plugins/registry.terraform.io/hashicorp/local/$(echo "${LOCAL_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/; \
+            mkdir -p "${TF_PLUGIN_MIRROR}/registry.terraform.io/hashicorp/local/$(echo "${LOCAL_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/"; \
         fi ; \
         if [ "${ADD_KEYCLOAK_PROVIDER}" = "true" ]; then \
             mkdir -p /root/.terraform.d/plugins/registry.terraform.io/keycloak/keycloak/$(echo "${KEYCLOACK_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/; \
+            mkdir -p "${TF_PLUGIN_MIRROR}/registry.terraform.io/keycloak/keycloak/$(echo "${KEYCLOACK_PROVIDER_VERSION}" | sed 's/^v//')/linux_amd64/"; \
         fi ; \
         # Create plugin links
         if [ "${ADD_PROXMOX_PROVIDER}" = "true" ]; then \
             ln -sf /usr/local/bin/terraform-provider-proxmox /root/.terraform.d/plugins/registry.terraform.io/telmate/proxmox/$(echo ${PROXMOX_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-proxmox; \
+            ln -sf /usr/local/bin/terraform-provider-proxmox "${TF_PLUGIN_MIRROR}/registry.terraform.io/telmate/proxmox/$(echo ${PROXMOX_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-proxmox"; \
         fi ; \
         if [ "${ADD_DNS_PROVIDER}" = "true" ]; then \
             ln -sf /usr/local/bin/terraform-provider-dns /root/.terraform.d/plugins/registry.terraform.io/hashicorp/dns/$(echo ${DNS_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-dns; \
+            ln -sf /usr/local/bin/terraform-provider-dns "${TF_PLUGIN_MIRROR}/registry.terraform.io/hashicorp/dns/$(echo ${DNS_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-dns"; \
         fi ; \
         if [ "${ADD_LOCAL_PROVIDER}" = "true" ]; then \
             ln -sf /usr/local/bin/terraform-provider-local /root/.terraform.d/plugins/registry.terraform.io/hashicorp/local/$(echo ${LOCAL_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-local; \
+            ln -sf /usr/local/bin/terraform-provider-local "${TF_PLUGIN_MIRROR}/registry.terraform.io/hashicorp/local/$(echo ${LOCAL_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-local"; \
         fi ; \
         if [ "${ADD_KEYCLOAK_PROVIDER}" = "true" ]; then \
             ln -sf /usr/local/bin/terraform-provider-keycloak /root/.terraform.d/plugins/registry.terraform.io/keycloak/keycloak/$(echo ${KEYCLOACK_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-keycloak; \
+            ln -sf /usr/local/bin/terraform-provider-keycloak "${TF_PLUGIN_MIRROR}/registry.terraform.io/keycloak/keycloak/$(echo ${KEYCLOACK_PROVIDER_VERSION} | sed 's/^v//')/linux_amd64/terraform-provider-keycloak"; \
         fi; \
     fi ; \ 
     # Remove build dependencies immediately
@@ -311,5 +320,7 @@ RUN apk add --no-cache bash curl sshpass openssh-client git ; \
     find / -name "*.pyo" -delete 2>/dev/null || true ; \
     find / -name "*.pyd" -delete 2>/dev/null || true ; \
     find / -name "*.py[co]" -delete 2>/dev/null || true ; \
-    rm -rf /tmp/* /root/.cache /var/cache/* /usr/share/cache/* 2>/dev/null || true
+    rm -rf /tmp/* /root/.cache /var/cache/* /usr/share/cache/* 2>/dev/null || true ; \
+    python3 -m pip install --no-cache-dir passlib ; \
+    ansible-galaxy collection install kubernetes.core ansible.posix
 CMD ["/bin/bash"]

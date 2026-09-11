@@ -44,8 +44,8 @@ All Docker builds produce consistent, working images across different platforms 
 
 ### Clone the repository:
 ```bash
-git clone https://github.com/yokozu777/infrastructure-automation-toolkit.git
-cd infrastructure-automation-toolkit
+git clone <your-gitlab-repo-url>
+cd image_builder
 ```
 ### Important: Configure ARG Variables First
 Before building, **edit the `krang.dockerfile` file** to set the default ARG values according to your specific requirements:
@@ -132,7 +132,7 @@ ARG CUSTOM_PIP_PACKAGES=""  # Space-separated list of custom pip packages
 
 # SSL Certificates
 ARG INSTALL_CUSTOM_CA_SSL_CERT=true  # Enable custom CA certificate installation
-ARG CA_CERT_URL=https://ca.example.com:8443/roots.pem  # URL to custom CA certificate
+ARG CA_CERT_URL=https://ca.mxhash.com:8443/roots.pem  # URL to custom CA certificate
 ```
 
 ### ARG Variables Usage Examples
@@ -363,3 +363,7 @@ For questions and suggestions, create Issues in the Github repository.
 ## License
 
 MIT License - See LICENSE file for details
+
+---
+
+**Created by DevOps Team** 🚀
