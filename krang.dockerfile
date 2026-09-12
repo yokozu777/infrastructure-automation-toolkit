@@ -1,7 +1,7 @@
 # =============================================================================
 # BASE IMAGES
 # =============================================================================
-ARG GOLANG_BASE_IMAGE_VERSION=1.27rc2-alpine # Go version for building Terraform providers
+ARG GOLANG_BASE_IMAGE_VERSION=1.27-alpine # Go version for building Terraform providers
 ARG PYTHON_BASE_IMAGE_VERSION=3.14-alpine  # Python base image for Ansible and tools
 ARG PYTHON_VERSION=3.14  # Python version for path consistency across platforms
 
@@ -28,16 +28,16 @@ ARG ADD_KEYCLOAK_PROVIDER=true  # Enable Keycloak Terraform provider
 # VERSION CONFIGURATION
 # =============================================================================
 # Terraform
-ARG TERRAFORM_VERSION=v1.15.8  # Terraform version to install
+ARG TERRAFORM_VERSION=v1.16.2  # Terraform version to install
 
 # Ansible
-ARG ANSIBLE_FULL_VERSION=14.3.0  # Full Ansible package version
+ARG ANSIBLE_FULL_VERSION=14.4.0  # Full Ansible package version
 ARG ANSIBLE_CORE_VERSION=2.19.2  # Ansible core package version
-ARG MITOGEN_VERSION=0.3.51  # Mitogen version for Ansible acceleration
+ARG MITOGEN_VERSION=0.3.53  # Mitogen version for Ansible acceleration
 
 # Kubernetes Tools
-ARG KUBECTL_VERSION=v1.36.3  # Kubernetes CLI version
-ARG HELM_VERSION=v4.2.3  # Helm package manager version
+ARG KUBECTL_VERSION=v1.37.0  # Kubernetes CLI version
+ARG HELM_VERSION=v4.3.0  # Helm package manager version
 ARG YQ_VERSION=v4.47.2  # YAML processor version
 
 # Terraform Providers
