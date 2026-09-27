@@ -28,7 +28,7 @@ ARG ADD_KEYCLOAK_PROVIDER=true  # Enable Keycloak Terraform provider
 # VERSION CONFIGURATION
 # =============================================================================
 # Terraform
-ARG TERRAFORM_VERSION=v1.16.2  # Terraform version to install
+ARG TERRAFORM_VERSION=v1.16.4  # Terraform version to install
 
 # Ansible
 ARG ANSIBLE_FULL_VERSION=14.4.0  # Full Ansible package version
@@ -36,7 +36,7 @@ ARG ANSIBLE_CORE_VERSION=2.19.2  # Ansible core package version
 ARG MITOGEN_VERSION=0.3.53  # Mitogen version for Ansible acceleration
 
 # Kubernetes Tools
-ARG KUBECTL_VERSION=v1.37.0  # Kubernetes CLI version
+ARG KUBECTL_VERSION=v1.37.1  # Kubernetes CLI version
 ARG HELM_VERSION=v4.3.0  # Helm package manager version
 ARG YQ_VERSION=v4.47.2  # YAML processor version
 
